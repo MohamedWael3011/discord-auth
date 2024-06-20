@@ -44,7 +44,7 @@ app.get("/auth/discord/callback", async (req, res) => {
   });
   try {
     const tokenResponse = await axios.post(
-      "https://discord.com/api/oauth2/token",
+      "http://discord.com/api/oauth2/token",
       params,
       {
         headers: {

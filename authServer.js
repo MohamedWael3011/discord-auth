@@ -5,10 +5,13 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const { ethers } = require("ethers");
 const User = require("./models/user"); // Adjust path as necessary
+const https = require("https");
+const fs = require("fs");
 
 const app = express();
 const port = process.env.PORT || 5000;
 
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI);
 
 const db = mongoose.connection;
@@ -18,14 +21,25 @@ db.once("open", () => {
   console.log("Connected to MongoDB");
 });
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// HTTPS configuration (for local development with self-signed certificate)
+const httpsOptions = {
+  key: fs.readFileSync("server.key"),
+  cert: fs.readFileSync("server.cert"),
+};
+
+// Create HTTPS server
+const server = https.createServer(httpsOptions, app);
+
+// Discord OAuth configuration
 const client_id = process.env.DISCORD_CLIENT_ID;
 const client_secret = process.env.DISCORD_CLIENT_SECRET;
 const redirect_uri = process.env.DISCORD_REDIRECT_URI;
 
-// Existing Discord authentication route
+// Discord authentication route
 app.get("/auth/discord", (req, res) => {
   const authorizeUrl = `https://discord.com/oauth2/authorize?client_id=${client_id}&response_type=code&redirect_uri=${encodeURIComponent(
     redirect_uri
@@ -33,6 +47,7 @@ app.get("/auth/discord", (req, res) => {
   res.redirect(authorizeUrl);
 });
 
+// Discord callback route
 app.get("/auth/discord/callback", async (req, res) => {
   const { code } = req.query;
   const params = new URLSearchParams({
@@ -44,7 +59,7 @@ app.get("/auth/discord/callback", async (req, res) => {
   });
   try {
     const tokenResponse = await axios.post(
-      "http://discord.com/api/oauth2/token",
+      "https://discord.com/api/oauth2/token",
       params,
       {
         headers: {
@@ -102,6 +117,8 @@ app.post("/update-matic-address", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
+// Start HTTPS server
+server.listen(port, () => {
+  console.log(`Server running at https://localhost:${port}/`);
 });
+

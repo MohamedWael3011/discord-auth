@@ -5,17 +5,15 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const { ethers } = require("ethers");
 const User = require("./models/user"); // Adjust path as necessary
-const https = require("https");
-const fs = require("fs");
 
 const app = express();
-const port = process.env.PORT || 5000;
-
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI);
+const port = 8000; // MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
 const db = mongoose.connection;
-
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 db.once("open", () => {
   console.log("Connected to MongoDB");
@@ -24,15 +22,6 @@ db.once("open", () => {
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// HTTPS configuration (for local development with self-signed certificate)
-const httpsOptions = {
-  key: fs.readFileSync("server.key"),
-  cert: fs.readFileSync("server.cert"),
-};
-
-// Create HTTPS server
-const server = https.createServer(httpsOptions, app);
 
 // Discord OAuth configuration
 const client_id = process.env.DISCORD_CLIENT_ID;
@@ -117,8 +106,7 @@ app.post("/update-matic-address", async (req, res) => {
   }
 });
 
-// Start HTTPS server
-server.listen(port, () => {
-  console.log(`Server running at https://localhost:${port}/`);
+// Start HTTP server
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}/`);
 });
-
